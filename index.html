@@ -74,6 +74,11 @@
             font-size: 48px;
             margin-bottom: 10px;
         }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
         button {
             background-color: #007bff;
             color: white;
@@ -82,9 +87,8 @@
             border-radius: 4px;
             font-size: 16px;
             cursor: pointer;
-            margin-top: 15px;
             transition: background-color 0.3s;
-            width: 100%;
+            flex: 1;
         }
         button:hover {
             background-color: #0056b3;
@@ -92,6 +96,13 @@
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
+        }
+        button.reset-btn {
+            background-color: #6c757d;
+            display: none;
+        }
+        button.reset-btn:hover {
+            background-color: #5a6268;
         }
         .loading {
             display: none;
@@ -152,8 +163,11 @@
                 
                 <div class="url-count" id="urlCount">0 URL</div>
             </div>
-            
-            <button type="submit" id="submitBtn">取得開始</button>
+
+            <div class="button-group">
+                <button type="submit" id="submitBtn">取得開始</button>
+                <button type="button" class="reset-btn" id="resetBtn">リセット</button>
+            </div>
         </form>
         
         <div class="loading" id="loading">
@@ -170,6 +184,7 @@
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
         const submitBtn = document.getElementById('submitBtn');
+        const resetBtn = document.getElementById('resetBtn');
         const loading = document.getElementById('loading');
         const errorDiv = document.getElementById('error');
         const successDiv = document.getElementById('success');
@@ -276,7 +291,10 @@
                 
                 // 成功メッセージ
                 showSuccess('ダウンロードが完了しました！');
-                
+
+                // リセットボタンを表示
+                resetBtn.style.display = 'block';
+
             } catch (error) {
                 showError('エラー: ' + error.message);
             } finally {
@@ -284,12 +302,31 @@
                 loading.style.display = 'none';
             }
         });
-        
+
+        // リセットボタンの処理
+        resetBtn.addEventListener('click', () => {
+            // テキストエリアをクリア
+            urlsTextarea.value = '';
+
+            // ファイル入力をリセット
+            fileInput.value = '';
+
+            // URLカウントをリセット
+            updateUrlCount();
+
+            // メッセージを非表示
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            // リセットボタンを非表示
+            resetBtn.style.display = 'none';
+        });
+
         function showError(message) {
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
         }
-        
+
         function showSuccess(message) {
             successDiv.textContent = message;
             successDiv.style.display = 'block';
