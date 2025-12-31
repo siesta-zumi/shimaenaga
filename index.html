@@ -210,6 +210,22 @@
             color: #4a5568;
             word-break: break-all;
             font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .url-status {
+            font-size: 16px;
+            font-weight: bold;
+            flex-shrink: 0;
+            width: 20px;
+            text-align: center;
+        }
+        .url-status.success {
+            color: #48bb78;
+        }
+        .url-status.failed {
+            color: #f56565;
         }
         .url-delete-btn {
             background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
@@ -648,7 +664,7 @@
         const progressText = document.getElementById('progressText');
         const cancelBtn = document.getElementById('cancelBtn');
 
-        // URLリストを管理する配列
+        // URLリストを管理する配列（各URLにステータスを持たせる）
         let urlList = [];
 
         // キャンセル用のAbortController
@@ -656,19 +672,50 @@
 
         // URLリストを表示
         function renderUrlList() {
+            console.log('renderUrlList called, urlList length:', urlList.length);
+            console.log('urlList content:', urlList);
+
             // コンテナをクリア
             urlListContainer.innerHTML = '';
 
             if (urlList.length === 0) {
+                console.log('URL list is empty, showing placeholder');
                 urlListContainer.innerHTML = '<div class="url-list-empty">上記から追加されたURLがここに表示されます</div>';
             } else {
-                urlList.forEach((url, index) => {
+                console.log('Rendering', urlList.length, 'URLs');
+                urlList.forEach((item, index) => {
+                    const url = typeof item === 'string' ? item : item.url;
+                    const status = typeof item === 'string' ? null : item.status;
+
                     const urlItem = document.createElement('div');
                     urlItem.className = 'url-item';
+                    urlItem.dataset.url = url;
 
                     const urlText = document.createElement('div');
                     urlText.className = 'url-text';
-                    urlText.textContent = url;
+
+                    // ステータスマーカー（デバッグ用にconsole.log追加）
+                    const statusSpan = document.createElement('span');
+                    statusSpan.className = 'url-status';
+                    console.log('Rendering URL:', url, 'Status:', status);
+                    if (status === 'success') {
+                        statusSpan.textContent = '○';
+                        statusSpan.classList.add('success');
+                        console.log('Added success marker');
+                    } else if (status === 'failed') {
+                        statusSpan.textContent = '×';
+                        statusSpan.classList.add('failed');
+                        console.log('Added failed marker');
+                    } else {
+                        console.log('No status, skipping marker');
+                    }
+
+                    // URL文字列
+                    const urlSpan = document.createElement('span');
+                    urlSpan.textContent = url;
+
+                    urlText.appendChild(statusSpan);
+                    urlText.appendChild(urlSpan);
 
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = 'url-delete-btn';
@@ -742,12 +789,13 @@
                 // URLを正規化
                 const normalizedUrl = normalizeUrl(url);
 
-                // 重複チェック
-                if (urlList.includes(normalizedUrl)) {
+                // 重複チェック（オブジェクトまたは文字列の両方に対応）
+                const urlStrings = urlList.map(item => typeof item === 'string' ? item : item.url);
+                if (urlStrings.includes(normalizedUrl)) {
                     showError('このURLは既に追加されています');
                     return;
                 }
-                urlList.push(normalizedUrl);
+                urlList.push({ url: normalizedUrl, status: null });
                 singleUrlInput.value = '';
                 renderUrlList();
                 // エラーメッセージをクリア
@@ -813,9 +861,10 @@
                     const invalidCount = e.target.result.split('\n').filter(line => line.trim() && !line.startsWith('#')).length - urls.length;
 
                     // 重複を除外して追加
-                    const newUrls = urls.filter(url => !urlList.includes(url));
+                    const urlStrings = urlList.map(item => typeof item === 'string' ? item : item.url);
+                    const newUrls = urls.filter(url => !urlStrings.includes(url));
                     const duplicateCount = urls.length - newUrls.length;
-                    urlList.push(...newUrls);
+                    urlList.push(...newUrls.map(url => ({ url, status: null })));
                     renderUrlList();
 
                     // 通知メッセージ
@@ -850,9 +899,10 @@
                     const invalidCount = e.target.result.split('\n').filter(line => line.trim() && !line.startsWith('#')).length - urls.length;
 
                     // 重複を除外して追加
-                    const newUrls = urls.filter(url => !urlList.includes(url));
+                    const urlStrings = urlList.map(item => typeof item === 'string' ? item : item.url);
+                    const newUrls = urls.filter(url => !urlStrings.includes(url));
                     const duplicateCount = urls.length - newUrls.length;
-                    urlList.push(...newUrls);
+                    urlList.push(...newUrls.map(url => ({ url, status: null })));
                     renderUrlList();
 
                     // 通知メッセージ
@@ -928,20 +978,54 @@
             const progressInterval = simulateProgress(urlList.length, estimatedTime);
 
             try {
+                // URL文字列の配列を送信
+                const urlStrings = urlList.map(item => typeof item === 'string' ? item : item.url);
+
                 const response = await fetch('/api/scrape', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ urls: urlList }),
+                    body: JSON.stringify({ urls: urlStrings }),
                     signal: abortController.signal
                 });
-                
+
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || 'エラーが発生しました');
                 }
-                
+
+                // レスポンスヘッダーから成功/失敗情報を取得
+                const successUrlsHeader = response.headers.get('X-Success-URLs');
+                const failedUrlsHeader = response.headers.get('X-Failed-URLs');
+
+                console.log('Success URLs Header:', successUrlsHeader);
+                console.log('Failed URLs Header:', failedUrlsHeader);
+
+                const successUrls = successUrlsHeader ? JSON.parse(successUrlsHeader) : [];
+                const failedUrls = failedUrlsHeader ? JSON.parse(failedUrlsHeader) : [];
+
+                console.log('Parsed Success URLs:', successUrls);
+                console.log('Parsed Failed URLs:', failedUrls);
+
+                // URLリストのステータスを更新
+                urlList = urlList.map(item => {
+                    const url = typeof item === 'string' ? item : item.url;
+                    if (successUrls.includes(url)) {
+                        console.log('Setting success for:', url);
+                        return { url, status: 'success' };
+                    } else if (failedUrls.includes(url)) {
+                        console.log('Setting failed for:', url);
+                        return { url, status: 'failed' };
+                    }
+                    return { url, status: null };
+                });
+
+                console.log('Updated URL List:', urlList);
+                console.log('About to call renderUrlList()...');
+                renderUrlList();
+                console.log('renderUrlList() finished');
+
                 // 進捗を停止して100%に
                 clearInterval(progressInterval);
                 updateProgress(urlList.length, urlList.length, 100);
@@ -957,8 +1041,14 @@
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
 
-                // 成功メッセージ
-                showSuccess('ダウンロードが完了しました！');
+                // 成功メッセージ（成功/失敗の件数を表示）
+                const successCount = successUrls.length;
+                const failedCount = failedUrls.length;
+                let message = 'ダウンロードが完了しました！';
+                if (failedCount > 0) {
+                    message += ` (成功: ${successCount}件、失敗: ${failedCount}件)`;
+                }
+                showSuccess(message);
 
                 // リセットボタンを表示
                 resetBtn.style.display = 'block';
