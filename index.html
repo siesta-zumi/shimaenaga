@@ -164,6 +164,77 @@
         textarea::placeholder {
             color: #a78bfa;
         }
+        .url-list-container {
+            width: 100%;
+            min-height: 200px;
+            max-height: 400px;
+            padding: 14px 16px;
+            border: 2px solid rgba(139, 92, 246, 0.5);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .url-list-empty {
+            color: #a78bfa;
+            font-size: 14px;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .url-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, rgba(237, 233, 254, 0.6) 0%, rgba(221, 214, 254, 0.6) 100%);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .url-item:hover {
+            background: linear-gradient(135deg, rgba(237, 233, 254, 0.9) 0%, rgba(221, 214, 254, 0.9) 100%);
+            border-color: rgba(139, 92, 246, 0.4);
+            transform: translateX(4px);
+        }
+        .url-item:last-child {
+            margin-bottom: 0;
+        }
+        .url-text {
+            flex: 1;
+            font-size: 13px;
+            color: #4a5568;
+            word-break: break-all;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+        }
+        .url-delete-btn {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+            border: none;
+            padding: 10px 0 !important;
+            width: 3.5em !important;
+            height: auto !important;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px !important;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-left: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+            line-height: 1;
+        }
+        .url-delete-btn:hover {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(245, 101, 101, 0.4);
+        }
+        .url-delete-btn:active {
+            transform: translateY(0);
+        }
         .url-input-group {
             margin-bottom: 12px;
         }
@@ -359,6 +430,28 @@
             border: 1px solid rgba(102, 126, 234, 0.2);
             font-weight: 500;
         }
+        .progress-container {
+            margin-top: 12px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+        .progress-text {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #5a67d8;
+        }
         .error {
             display: none;
             margin-top: 20px;
@@ -417,6 +510,21 @@
         textarea::-webkit-scrollbar-thumb:hover {
             background: #a78bfa;
         }
+
+        .url-list-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .url-list-container::-webkit-scrollbar-track {
+            background: rgba(250, 245, 255, 0.5);
+            border-radius: 10px;
+        }
+        .url-list-container::-webkit-scrollbar-thumb {
+            background: #c4b5fd;
+            border-radius: 10px;
+        }
+        .url-list-container::-webkit-scrollbar-thumb:hover {
+            background: #a78bfa;
+        }
     </style>
 </head>
 <body>
@@ -449,13 +557,10 @@
             <div class="url-list-section">
                 <label for="urls">リクエストURL:</label>
 
-                <!-- URLリスト表示用テキストエリア -->
-                <textarea
-                    id="urls"
-                    rows="10"
-                    placeholder="上記から追加されたURLがここに表示されます"
-                    required
-                ></textarea>
+                <!-- URLリスト表示エリア -->
+                <div class="url-list-container" id="urlListContainer">
+                    <div class="url-list-empty">上記から追加されたURLがここに表示されます</div>
+                </div>
 
                 <div class="url-count" id="urlCount">0 URL</div>
             </div>
@@ -467,7 +572,13 @@
         </form>
         
         <div class="loading" id="loading">
-            <p>⏳ 処理中... しばらくお待ちください（数分かかる場合があります）</p>
+            <p>⏳ 処理中... しばらくお待ちください</p>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">0 / 0 URL処理中...</div>
+            </div>
         </div>
         
         <div class="error" id="error"></div>
@@ -489,7 +600,7 @@
 
     <script>
         const form = document.getElementById('scrapeForm');
-        const urlsTextarea = document.getElementById('urls');
+        const urlListContainer = document.getElementById('urlListContainer');
         const singleUrlInput = document.getElementById('singleUrl');
         const addUrlBtn = document.getElementById('addUrlBtn');
         const fileUploadBtn = document.getElementById('fileUploadBtn');
@@ -503,33 +614,69 @@
         const errorDiv = document.getElementById('error');
         const successDiv = document.getElementById('success');
         const urlCount = document.getElementById('urlCount');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+
+        // URLリストを管理する配列
+        let urlList = [];
+
+        // URLリストを表示
+        function renderUrlList() {
+            // コンテナをクリア
+            urlListContainer.innerHTML = '';
+
+            if (urlList.length === 0) {
+                urlListContainer.innerHTML = '<div class="url-list-empty">上記から追加されたURLがここに表示されます</div>';
+            } else {
+                urlList.forEach((url, index) => {
+                    const urlItem = document.createElement('div');
+                    urlItem.className = 'url-item';
+
+                    const urlText = document.createElement('div');
+                    urlText.className = 'url-text';
+                    urlText.textContent = url;
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'url-delete-btn';
+                    deleteBtn.textContent = '×';
+                    deleteBtn.type = 'button';
+                    deleteBtn.title = '削除';
+                    deleteBtn.onclick = () => deleteUrl(index);
+
+                    urlItem.appendChild(urlText);
+                    urlItem.appendChild(deleteBtn);
+                    urlListContainer.appendChild(urlItem);
+                });
+            }
+
+            updateUrlCount();
+        }
+
+        // URLを削除
+        function deleteUrl(index) {
+            urlList.splice(index, 1);
+            renderUrlList();
+        }
 
         // URL数をカウントして表示
         function updateUrlCount() {
-            const urls = urlsTextarea.value
-                .split('\n')
-                .map(line => line.trim())
-                .filter(line => line && !line.startsWith('#'));
-            urlCount.textContent = `${urls.length} URL${urls.length !== 1 ? 's' : ''}`;
+            urlCount.textContent = `${urlList.length} URL${urlList.length !== 1 ? 's' : ''}`;
         }
-
-        urlsTextarea.addEventListener('input', updateUrlCount);
 
         // URLを追加する機能
         addUrlBtn.addEventListener('click', () => {
             const url = singleUrlInput.value.trim();
             if (url) {
-                // 既存のURLリストに追加
-                const currentUrls = urlsTextarea.value.trim();
-                if (currentUrls) {
-                    urlsTextarea.value = currentUrls + '\n' + url;
-                } else {
-                    urlsTextarea.value = url;
+                // 重複チェック
+                if (urlList.includes(url)) {
+                    showError('このURLは既に追加されています');
+                    return;
                 }
-                // 入力欄をクリア
+                urlList.push(url);
                 singleUrlInput.value = '';
-                // カウント更新
-                updateUrlCount();
+                renderUrlList();
+                // エラーメッセージをクリア
+                errorDiv.style.display = 'none';
             }
         });
 
@@ -581,8 +728,19 @@
             if (file && file.type === 'text/plain') {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    urlsTextarea.value = e.target.result;
-                    updateUrlCount();
+                    const urls = e.target.result
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line && !line.startsWith('#'));
+                    // 重複を除外して追加
+                    const newUrls = urls.filter(url => !urlList.includes(url));
+                    const duplicateCount = urls.length - newUrls.length;
+                    urlList.push(...newUrls);
+                    renderUrlList();
+                    // 重複があった場合は通知
+                    if (duplicateCount > 0) {
+                        showError(`${duplicateCount}件の重複URLをスキップしました`);
+                    }
                     // モーダルを閉じる
                     modalOverlay.classList.remove('show');
                 };
@@ -597,8 +755,19 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    urlsTextarea.value = e.target.result;
-                    updateUrlCount();
+                    const urls = e.target.result
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line && !line.startsWith('#'));
+                    // 重複を除外して追加
+                    const newUrls = urls.filter(url => !urlList.includes(url));
+                    const duplicateCount = urls.length - newUrls.length;
+                    urlList.push(...newUrls);
+                    renderUrlList();
+                    // 重複があった場合は通知
+                    if (duplicateCount > 0) {
+                        showError(`${duplicateCount}件の重複URLをスキップしました`);
+                    }
                     // モーダルを閉じる
                     modalOverlay.classList.remove('show');
                 };
@@ -606,33 +775,59 @@
             }
         });
 
+        // 進捗シミュレーション
+        function simulateProgress(totalUrls, estimatedTimeMs) {
+            let currentProgress = 0;
+            const intervalMs = 500; // 0.5秒ごとに更新
+            const progressPerInterval = 100 / (estimatedTimeMs / intervalMs);
+
+            const interval = setInterval(() => {
+                currentProgress += progressPerInterval;
+                if (currentProgress >= 95) {
+                    currentProgress = 95; // 95%で止める（完了は実際のレスポンス待ち）
+                    clearInterval(interval);
+                }
+                const currentUrl = Math.min(Math.floor((currentProgress / 100) * totalUrls), totalUrls - 1);
+                updateProgress(currentUrl, totalUrls, currentProgress);
+            }, intervalMs);
+
+            return interval;
+        }
+
+        function updateProgress(current, total, percentage) {
+            progressFill.style.width = `${percentage}%`;
+            progressText.textContent = `${current} / ${total} URL処理中...`;
+        }
+
         // フォーム送信
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const urls = urlsTextarea.value
-                .split('\n')
-                .map(line => line.trim())
-                .filter(line => line && !line.startsWith('#'));
-            
-            if (urls.length === 0) {
+
+            if (urlList.length === 0) {
                 showError('URLを入力してください');
                 return;
             }
-            
+
             // UI更新
             submitBtn.disabled = true;
             loading.style.display = 'block';
             errorDiv.style.display = 'none';
             successDiv.style.display = 'none';
-            
+
+            // 進捗リセット
+            updateProgress(0, urlList.length, 0);
+
+            // 進捗シミュレーション開始（1URLあたり5秒と仮定）
+            const estimatedTime = urlList.length * 5000;
+            const progressInterval = simulateProgress(urlList.length, estimatedTime);
+
             try {
                 const response = await fetch('/api/scrape', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ urls: urls })
+                    body: JSON.stringify({ urls: urlList })
                 });
                 
                 if (!response.ok) {
@@ -640,6 +835,10 @@
                     throw new Error(errorData.error || 'エラーが発生しました');
                 }
                 
+                // 進捗を停止して100%に
+                clearInterval(progressInterval);
+                updateProgress(urlList.length, urlList.length, 100);
+
                 // ZIPファイルをダウンロード
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
@@ -650,7 +849,7 @@
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
-                
+
                 // 成功メッセージ
                 showSuccess('ダウンロードが完了しました！');
 
@@ -658,6 +857,8 @@
                 resetBtn.style.display = 'block';
 
             } catch (error) {
+                // 進捗を停止
+                clearInterval(progressInterval);
                 showError('エラー: ' + error.message);
             } finally {
                 submitBtn.disabled = false;
@@ -667,8 +868,9 @@
 
         // リセットボタンの処理
         resetBtn.addEventListener('click', () => {
-            // テキストエリアをクリア
-            urlsTextarea.value = '';
+            // URLリストをクリア
+            urlList = [];
+            renderUrlList();
 
             // 単独URL入力をクリア
             singleUrlInput.value = '';
@@ -678,9 +880,6 @@
 
             // モーダルを非表示
             modalOverlay.classList.remove('show');
-
-            // URLカウントをリセット
-            updateUrlCount();
 
             // メッセージを非表示
             errorDiv.style.display = 'none';
