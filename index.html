@@ -210,14 +210,19 @@
         .url-delete-btn {
             background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
             color: white;
+            padding: 0;
             border: none;
-            padding: 10px 0 !important;
-            width: 3.5em !important;
-            height: auto !important;
             border-radius: 10px;
             cursor: pointer;
             font-size: 14px !important;
             font-weight: 600;
+            width: 49px !important;
+            height: 34px !important;
+            min-width: 49px;
+            max-width: 49px;
+            min-height: 34px;
+            max-height: 34px;
+            text-align: center;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -225,7 +230,6 @@
             margin-left: 12px;
             transition: all 0.3s ease;
             box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
-            line-height: 1;
         }
         .url-delete-btn:hover {
             background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
