@@ -47,6 +47,9 @@ desktop.ini
 .env
 .env.local
 
+# Claude Code設定（ローカル設定のみ除外）
+.claude/settings.local.json
+
 # その他
 shimaenaga/
 urls.txt
