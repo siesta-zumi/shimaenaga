@@ -133,11 +133,15 @@
         label {
             display: block;
             margin-bottom: 12px;
-            color: #2d3748;
-            font-weight: 600;
-            font-size: 14px;
-            letter-spacing: 0.3px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: 0.5px;
             text-transform: uppercase;
+            font-family: 'Outfit', sans-serif;
         }
         textarea {
             width: 100%;
@@ -434,6 +438,27 @@
             border: 1px solid rgba(102, 126, 234, 0.2);
             font-weight: 500;
         }
+        .cancel-btn {
+            margin-top: 12px;
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+            padding: 8px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(245, 101, 101, 0.3);
+        }
+        .cancel-btn:hover {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
+        }
+        .cancel-btn:active {
+            transform: translateY(0);
+        }
         .progress-container {
             margin-top: 12px;
         }
@@ -583,6 +608,7 @@
                 </div>
                 <div class="progress-text" id="progressText">0 / 0 URL処理中...</div>
             </div>
+            <button type="button" class="cancel-btn" id="cancelBtn">キャンセル</button>
         </div>
         
         <div class="error" id="error"></div>
@@ -620,9 +646,13 @@
         const urlCount = document.getElementById('urlCount');
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
+        const cancelBtn = document.getElementById('cancelBtn');
 
         // URLリストを管理する配列
         let urlList = [];
+
+        // キャンセル用のAbortController
+        let abortController = null;
 
         // URLリストを表示
         function renderUrlList() {
@@ -667,16 +697,57 @@
             urlCount.textContent = `${urlList.length} URL${urlList.length !== 1 ? 's' : ''}`;
         }
 
+        // URL形式を検証
+        function isValidUrl(string) {
+            try {
+                const url = new URL(string);
+                // プロトコルチェック
+                if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+                    return false;
+                }
+                // ドメインに . が含まれているか、localhostかチェック
+                return url.hostname.includes('.') || url.hostname === 'localhost';
+            } catch (_) {
+                // http:// または https:// がない場合は自動で追加を試みる
+                try {
+                    const url = new URL('https://' + string);
+                    // ドメインに . が含まれているか、localhostかチェック
+                    return url.hostname.includes('.') || url.hostname === 'localhost';
+                } catch (_) {
+                    return false;
+                }
+            }
+        }
+
+        // URLを正規化（http://がない場合は追加）
+        function normalizeUrl(string) {
+            try {
+                new URL(string);
+                return string;
+            } catch (_) {
+                return 'https://' + string;
+            }
+        }
+
         // URLを追加する機能
         addUrlBtn.addEventListener('click', () => {
             const url = singleUrlInput.value.trim();
             if (url) {
+                // URL形式チェック
+                if (!isValidUrl(url)) {
+                    showError('有効なURLを入力してください（例: https://example.com）');
+                    return;
+                }
+
+                // URLを正規化
+                const normalizedUrl = normalizeUrl(url);
+
                 // 重複チェック
-                if (urlList.includes(url)) {
+                if (urlList.includes(normalizedUrl)) {
                     showError('このURLは既に追加されています');
                     return;
                 }
-                urlList.push(url);
+                urlList.push(normalizedUrl);
                 singleUrlInput.value = '';
                 renderUrlList();
                 // エラーメッセージをクリア
@@ -735,16 +806,26 @@
                     const urls = e.target.result
                         .split('\n')
                         .map(line => line.trim())
-                        .filter(line => line && !line.startsWith('#'));
+                        .filter(line => line && !line.startsWith('#'))
+                        .map(url => normalizeUrl(url))
+                        .filter(url => isValidUrl(url));
+
+                    const invalidCount = e.target.result.split('\n').filter(line => line.trim() && !line.startsWith('#')).length - urls.length;
+
                     // 重複を除外して追加
                     const newUrls = urls.filter(url => !urlList.includes(url));
                     const duplicateCount = urls.length - newUrls.length;
                     urlList.push(...newUrls);
                     renderUrlList();
-                    // 重複があった場合は通知
-                    if (duplicateCount > 0) {
-                        showError(`${duplicateCount}件の重複URLをスキップしました`);
+
+                    // 通知メッセージ
+                    const messages = [];
+                    if (invalidCount > 0) messages.push(`${invalidCount}件の無効なURL`);
+                    if (duplicateCount > 0) messages.push(`${duplicateCount}件の重複URL`);
+                    if (messages.length > 0) {
+                        showError(`${messages.join('と')}をスキップしました`);
                     }
+
                     // モーダルを閉じる
                     modalOverlay.classList.remove('show');
                 };
@@ -762,16 +843,26 @@
                     const urls = e.target.result
                         .split('\n')
                         .map(line => line.trim())
-                        .filter(line => line && !line.startsWith('#'));
+                        .filter(line => line && !line.startsWith('#'))
+                        .map(url => normalizeUrl(url))
+                        .filter(url => isValidUrl(url));
+
+                    const invalidCount = e.target.result.split('\n').filter(line => line.trim() && !line.startsWith('#')).length - urls.length;
+
                     // 重複を除外して追加
                     const newUrls = urls.filter(url => !urlList.includes(url));
                     const duplicateCount = urls.length - newUrls.length;
                     urlList.push(...newUrls);
                     renderUrlList();
-                    // 重複があった場合は通知
-                    if (duplicateCount > 0) {
-                        showError(`${duplicateCount}件の重複URLをスキップしました`);
+
+                    // 通知メッセージ
+                    const messages = [];
+                    if (invalidCount > 0) messages.push(`${invalidCount}件の無効なURL`);
+                    if (duplicateCount > 0) messages.push(`${duplicateCount}件の重複URL`);
+                    if (messages.length > 0) {
+                        showError(`${messages.join('と')}をスキップしました`);
                     }
+
                     // モーダルを閉じる
                     modalOverlay.classList.remove('show');
                 };
@@ -803,6 +894,14 @@
             progressText.textContent = `${current} / ${total} URL処理中...`;
         }
 
+        // キャンセルボタンのイベントリスナー
+        cancelBtn.addEventListener('click', () => {
+            if (abortController) {
+                abortController.abort();
+                showError('処理をキャンセルしました');
+            }
+        });
+
         // フォーム送信
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -811,6 +910,9 @@
                 showError('URLを入力してください');
                 return;
             }
+
+            // AbortControllerを作成
+            abortController = new AbortController();
 
             // UI更新
             submitBtn.disabled = true;
@@ -831,7 +933,8 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ urls: urlList })
+                    body: JSON.stringify({ urls: urlList }),
+                    signal: abortController.signal
                 });
                 
                 if (!response.ok) {
@@ -863,10 +966,17 @@
             } catch (error) {
                 // 進捗を停止
                 clearInterval(progressInterval);
-                showError('エラー: ' + error.message);
+
+                // キャンセルの場合は特別な処理
+                if (error.name === 'AbortError') {
+                    // キャンセルメッセージは既に表示されている
+                } else {
+                    showError('エラー: ' + error.message);
+                }
             } finally {
                 submitBtn.disabled = false;
                 loading.style.display = 'none';
+                abortController = null;
             }
         });
 
