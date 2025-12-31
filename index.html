@@ -11,38 +11,69 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 900px;
-            margin: 50px auto;
+            margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
-            position: relative;
         }
-        body::before {
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            margin-bottom: 20px;
+        }
+        header h1 {
+            color: #333;
+            font-size: 32px;
+            margin: 0;
+        }
+        .container {
+            position: relative;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 700px;
+            min-height: auto;
+            background-color: white;
+        }
+        .container::before {
             content: '';
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('ダウンロード.jpg');
-            background-size: cover;
-            background-position: center;
+            background-image: url('/static/ダウンロード.jpg');
+            background-size: contain;
+            background-position: center center;
             background-repeat: no-repeat;
-            background-attachment: fixed;
-            opacity: 0.08;
-            z-index: -1;
+            opacity: 0.7;
+            z-index: 0;
+            pointer-events: none;
         }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.3);
+            z-index: 1;
+            pointer-events: none;
         }
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
+        .container > * {
+            position: relative;
+            z-index: 2;
         }
         .input-section {
             margin-bottom: 20px;
+        }
+        .url-add-section {
+            margin-bottom: 30px;
+        }
+        .url-list-section {
+            margin-top: 30px;
         }
         label {
             display: block;
@@ -52,27 +83,92 @@
         }
         textarea {
             width: 100%;
-            height: 200px;
             padding: 10px;
             border: 2px solid #ddd;
             border-radius: 4px;
             font-size: 14px;
             font-family: monospace;
-            resize: vertical;
+            resize: none;
+            overflow-x: auto;
+            overflow-y: auto;
+            white-space: pre;
+            word-wrap: normal;
         }
         textarea:focus {
             outline: none;
             border-color: #007bff;
         }
+        .url-input-group {
+            margin-bottom: 8px;
+        }
+        .url-input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .url-input-group input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        .add-url-btn {
+            background-color: #28a745;
+            color: white;
+            padding: 8px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 3.5em;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .add-url-btn:hover {
+            background-color: #218838;
+        }
+        .file-upload-btn {
+            background-color: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 15px;
+            width: auto;
+            display: inline-block;
+        }
+        .file-upload-btn:hover {
+            background-color: #5a6268;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
         .drop-zone {
             border: 2px dashed #ccc;
-            border-radius: 4px;
-            padding: 40px;
+            border-radius: 8px;
+            padding: 60px 40px;
             text-align: center;
-            background-color: #fafafa;
+            background-color: white;
             cursor: pointer;
             transition: all 0.3s;
-            margin-bottom: 20px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
         }
         .drop-zone:hover {
             border-color: #007bff;
@@ -89,6 +185,22 @@
         .drop-zone-icon {
             font-size: 48px;
             margin-bottom: 10px;
+        }
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: auto;
+            line-height: 1;
+        }
+        .close-modal:hover {
+            color: #333;
         }
         .button-group {
             display: flex;
@@ -153,30 +265,42 @@
     </style>
 </head>
 <body>
+    <header>
+        <h1>シマエナガに依頼する</h1>
+    </header>
+
     <div class="container">
-        <h1>画像一括取得システム</h1>
-        
         <form id="scrapeForm">
-            <div class="input-section">
-                <label for="urls">URL（1つまたは複数、1行1URL）:</label>
-                
-                <!-- ドラッグ&ドロップゾーン -->
-                <div class="drop-zone" id="dropZone">
-                    <div class="drop-zone-icon">📄</div>
-                    <div class="drop-zone-text">
-                        テキストファイルをドラッグ&ドロップ<br>
-                        またはクリックしてファイルを選択
-                    </div>
-                    <input type="file" id="fileInput" accept=".txt" style="display: none;">
+            <!-- URLを追加ゾーン（上部） -->
+            <div class="url-add-section">
+                <label for="singleUrl">URLを追加:</label>
+
+                <!-- 単独URL入力 -->
+                <div class="url-input-group">
+                    <input
+                        type="text"
+                        id="singleUrl"
+                        placeholder="https://example.com/page1"
+                    >
                 </div>
-                
-                <!-- テキストエリア -->
-                <textarea 
-                    id="urls" 
-                    placeholder="https://example.com/page1&#10;https://example.com/page2&#10;&#10;または、上記のドラッグ&ドロップゾーンにテキストファイルをドロップしてください"
+                <button type="button" class="add-url-btn" id="addUrlBtn">追加</button>
+
+                <!-- ファイルアップロードボタン -->
+                <button type="button" class="file-upload-btn" id="fileUploadBtn">📄 ファイルから読み込む</button>
+            </div>
+
+            <!-- リクエストURLゾーン（下部） -->
+            <div class="url-list-section">
+                <label for="urls">リクエストURL:</label>
+
+                <!-- URLリスト表示用テキストエリア -->
+                <textarea
+                    id="urls"
+                    rows="10"
+                    placeholder="上記から追加されたURLがここに表示されます"
                     required
                 ></textarea>
-                
+
                 <div class="url-count" id="urlCount">0 URL</div>
             </div>
 
@@ -194,10 +318,28 @@
         <div class="success" id="success"></div>
     </div>
 
+    <!-- モーダルオーバーレイ（ドラッグ&ドロップゾーン） -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="drop-zone" id="dropZone">
+            <button type="button" class="close-modal" id="closeModal">×</button>
+            <div class="drop-zone-icon">📄</div>
+            <div class="drop-zone-text">
+                テキストファイルをドラッグ&ドロップ<br>
+                またはクリックしてファイルを選択
+            </div>
+            <input type="file" id="fileInput" accept=".txt" style="display: none;">
+        </div>
+    </div>
+
     <script>
         const form = document.getElementById('scrapeForm');
         const urlsTextarea = document.getElementById('urls');
+        const singleUrlInput = document.getElementById('singleUrl');
+        const addUrlBtn = document.getElementById('addUrlBtn');
+        const fileUploadBtn = document.getElementById('fileUploadBtn');
+        const modalOverlay = document.getElementById('modalOverlay');
         const dropZone = document.getElementById('dropZone');
+        const closeModal = document.getElementById('closeModal');
         const fileInput = document.getElementById('fileInput');
         const submitBtn = document.getElementById('submitBtn');
         const resetBtn = document.getElementById('resetBtn');
@@ -217,6 +359,50 @@
 
         urlsTextarea.addEventListener('input', updateUrlCount);
 
+        // URLを追加する機能
+        addUrlBtn.addEventListener('click', () => {
+            const url = singleUrlInput.value.trim();
+            if (url) {
+                // 既存のURLリストに追加
+                const currentUrls = urlsTextarea.value.trim();
+                if (currentUrls) {
+                    urlsTextarea.value = currentUrls + '\n' + url;
+                } else {
+                    urlsTextarea.value = url;
+                }
+                // 入力欄をクリア
+                singleUrlInput.value = '';
+                // カウント更新
+                updateUrlCount();
+            }
+        });
+
+        // Enterキーでも追加できるように
+        singleUrlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addUrlBtn.click();
+            }
+        });
+
+        // ファイルアップロードボタンでモーダルを表示
+        fileUploadBtn.addEventListener('click', () => {
+            modalOverlay.classList.add('show');
+        });
+
+        // 閉じるボタンでモーダルを非表示
+        closeModal.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modalOverlay.classList.remove('show');
+        });
+
+        // オーバーレイクリックでモーダルを閉じる
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                modalOverlay.classList.remove('show');
+            }
+        });
+
         // ドラッグ&ドロップの処理
         dropZone.addEventListener('click', () => {
             fileInput.click();
@@ -234,13 +420,15 @@
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropZone.classList.remove('dragover');
-            
+
             const file = e.dataTransfer.files[0];
             if (file && file.type === 'text/plain') {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     urlsTextarea.value = e.target.result;
                     updateUrlCount();
+                    // モーダルを閉じる
+                    modalOverlay.classList.remove('show');
                 };
                 reader.readAsText(file);
             } else {
@@ -255,6 +443,8 @@
                 reader.onload = (e) => {
                     urlsTextarea.value = e.target.result;
                     updateUrlCount();
+                    // モーダルを閉じる
+                    modalOverlay.classList.remove('show');
                 };
                 reader.readAsText(file);
             }
@@ -324,8 +514,14 @@
             // テキストエリアをクリア
             urlsTextarea.value = '';
 
+            // 単独URL入力をクリア
+            singleUrlInput.value = '';
+
             // ファイル入力をリセット
             fileInput.value = '';
+
+            // モーダルを非表示
+            modalOverlay.classList.remove('show');
 
             // URLカウントをリセット
             updateUrlCount();
