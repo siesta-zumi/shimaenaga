@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# ビルド・配布
+build/
+dist/
+*.spec
+*.exe
+*.msi
+*.dmg
+
+# 出力フォルダ
+result_js/
+result_js_fallback/
+
+# バックアップ
+backup/
+配布用/
+
+# 一時ファイル
+*.tmp
+*.log
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 環境変数
+.env
+.env.local
+
+# その他
+shimaenaga/
+urls.txt
+*.exe
