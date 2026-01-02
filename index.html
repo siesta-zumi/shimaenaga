@@ -3,95 +3,445 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像一括取得システム</title>
+    <title>シマエナガに依頼する - 画像一括取得</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 900px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            font-family: 'Noto Sans JP', 'Outfit', sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px 30px;
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-out 0.2s both;
+        }
+
+        header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 42px;
+            background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            font-weight: 300;
+            margin-top: 10px;
         }
         .container {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            padding: 40px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 235, 255, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1),
+                        0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 700px;
+            min-height: auto;
+            animation: fadeIn 1s ease-out 0.4s both;
+            transition: all 0.3s ease;
         }
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
+
+        .container:hover {
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15),
+                        0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+        }
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('/static/ダウンロード.jpg');
+            background-size: contain;
+            background-position: center center;
+            background-repeat: no-repeat;
+            opacity: 0.7;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            z-index: 1;
+            pointer-events: none;
+        }
+        .container > * {
+            position: relative;
+            z-index: 2;
         }
         .input-section {
             margin-bottom: 20px;
         }
+        .url-add-section {
+            margin-bottom: 30px;
+        }
+        .url-list-section {
+            margin-top: 30px;
+        }
         label {
             display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-family: 'Outfit', sans-serif;
         }
         textarea {
             width: 100%;
-            height: 200px;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 4px;
+            padding: 14px 16px;
+            border: 2px solid rgba(139, 92, 246, 0.5);
+            border-radius: 12px;
             font-size: 14px;
-            font-family: monospace;
-            resize: vertical;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+            resize: none;
+            overflow-x: auto;
+            overflow-y: auto;
+            white-space: pre;
+            word-wrap: normal;
+            background: rgba(255, 255, 255, 0.95);
+            transition: all 0.3s ease;
         }
         textarea:focus {
             outline: none;
-            border-color: #007bff;
+            border-color: #8b5cf6;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+            transform: translateY(-1px);
+        }
+        textarea::placeholder {
+            color: #a78bfa;
+        }
+        .url-list-container {
+            width: 100%;
+            min-height: 200px;
+            max-height: 400px;
+            padding: 14px 16px;
+            border: 2px solid rgba(139, 92, 246, 0.5);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .url-list-empty {
+            color: #a78bfa;
+            font-size: 14px;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .url-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, rgba(237, 233, 254, 0.6) 0%, rgba(221, 214, 254, 0.6) 100%);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .url-item:hover {
+            background: linear-gradient(135deg, rgba(237, 233, 254, 0.9) 0%, rgba(221, 214, 254, 0.9) 100%);
+            border-color: rgba(139, 92, 246, 0.4);
+            transform: translateX(4px);
+        }
+        .url-item:last-child {
+            margin-bottom: 0;
+        }
+        .url-text {
+            flex: 1;
+            font-size: 13px;
+            color: #4a5568;
+            word-break: break-all;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .url-status {
+            font-size: 16px;
+            font-weight: bold;
+            flex-shrink: 0;
+            width: 20px;
+            text-align: center;
+        }
+        .url-status.success {
+            color: #48bb78;
+        }
+        .url-status.failed {
+            color: #f56565;
+        }
+        .url-delete-btn {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+            padding: 0;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px !important;
+            font-weight: 600;
+            width: 49px !important;
+            height: 34px !important;
+            min-width: 49px;
+            max-width: 49px;
+            min-height: 34px;
+            max-height: 34px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-left: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+        }
+        .url-delete-btn:hover {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(245, 101, 101, 0.4);
+        }
+        .url-delete-btn:active {
+            transform: translateY(0);
+        }
+        .url-input-group {
+            margin-bottom: 12px;
+        }
+        .url-input-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid rgba(139, 92, 246, 0.5);
+            border-radius: 12px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.95);
+            transition: all 0.3s ease;
+        }
+        .url-input-group input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+            transform: translateY(-1px);
+        }
+        .url-input-group input::placeholder {
+            color: #a78bfa;
+        }
+        .add-url-btn {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 10px 0;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            width: 3.5em;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+            transition: all 0.3s ease;
+        }
+        .add-url-btn:hover {
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(72, 187, 120, 0.4);
+        }
+        .add-url-btn:active {
+            transform: translateY(0);
+        }
+        .file-upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            width: auto;
+            display: inline-block;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+        .file-upload-btn:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+        .file-upload-btn:active {
+            transform: translateY(0);
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.show {
+            display: flex;
         }
         .drop-zone {
-            border: 2px dashed #ccc;
-            border-radius: 4px;
-            padding: 40px;
+            border: 3px dashed rgba(139, 92, 246, 0.4);
+            border-radius: 20px;
+            padding: 60px 40px;
             text-align: center;
-            background-color: #fafafa;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 235, 255, 0.95) 100%);
             cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            position: relative;
         }
         .drop-zone:hover {
-            border-color: #007bff;
-            background-color: #f0f7ff;
+            border-color: #8b5cf6;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%);
+            transform: scale(1.02);
         }
         .drop-zone.dragover {
-            border-color: #007bff;
-            background-color: #e7f3ff;
+            border-color: #7c3aed;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(124, 58, 237, 0.12) 100%);
+            transform: scale(1.05);
         }
         .drop-zone-text {
-            color: #666;
-            font-size: 14px;
+            color: #4a5568;
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 1.6;
         }
         .drop-zone-icon {
-            font-size: 48px;
-            margin-bottom: 10px;
+            font-size: 64px;
+            margin-bottom: 16px;
+            animation: float 3s ease-in-out infinite;
+        }
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #f7fafc;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #718096;
+            padding: 8px;
+            width: 40px;
+            height: 40px;
+            line-height: 1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: none;
+        }
+        .close-modal:hover {
+            color: #2d3748;
+            background: #e2e8f0;
+            transform: rotate(90deg);
+        }
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
         }
         button {
-            background-color: #007bff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 12px 30px;
+            padding: 14px 32px;
             border: none;
-            border-radius: 4px;
+            border-radius: 12px;
             font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 15px;
-            transition: background-color 0.3s;
-            width: 100%;
+            transition: all 0.3s ease;
+            flex: 1;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
         button:hover {
-            background-color: #0056b3;
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
         }
         button:disabled {
-            background-color: #ccc;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.6) 0%, rgba(124, 58, 237, 0.6) 100%);
             cursor: not-allowed;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+            transform: none;
+            opacity: 0.7;
+        }
+        button.reset-btn {
+            background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+            display: none;
+            box-shadow: 0 4px 12px rgba(74, 85, 104, 0.3);
+        }
+        button.reset-btn:hover {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            box-shadow: 0 6px 16px rgba(74, 85, 104, 0.4);
         }
         /* 追加ボタンのスタイル */
         .btn-add {
@@ -129,95 +479,388 @@
         .loading {
             display: none;
             margin-top: 20px;
-            padding: 15px;
-            background-color: #e7f3ff;
-            border-radius: 4px;
-            color: #0056b3;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #ebf4ff 0%, #e0e7ff 100%);
+            border-radius: 12px;
+            color: #4c51bf;
             text-align: center;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            font-weight: 500;
+        }
+        .cancel-btn {
+            margin-top: 12px;
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+            padding: 8px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(245, 101, 101, 0.3);
+        }
+        .cancel-btn:hover {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
+        }
+        .cancel-btn:active {
+            transform: translateY(0);
+        }
+        .progress-container {
+            margin-top: 12px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+        .progress-text {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #5a67d8;
         }
         .error {
             display: none;
             margin-top: 20px;
-            padding: 15px;
-            background-color: #fee;
-            color: #c33;
-            border-radius: 4px;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+            color: #c53030;
+            border-radius: 12px;
+            border: 1px solid rgba(197, 48, 48, 0.2);
+            font-weight: 500;
         }
         .success {
             display: none;
             margin-top: 20px;
-            padding: 15px;
-            background-color: #efe;
-            color: #3c3;
-            border-radius: 4px;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%);
+            color: #2f855a;
+            border-radius: 12px;
+            border: 1px solid rgba(47, 133, 90, 0.2);
+            font-weight: 500;
         }
         .url-count {
-            margin-top: 10px;
-            color: #666;
-            font-size: 14px;
+            margin-top: 12px;
+            color: #718096;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* カスタムスクロールバー */
+        .container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .container::-webkit-scrollbar-track {
+            background: rgba(250, 245, 255, 0.5);
+            border-radius: 10px;
+        }
+        .container::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%);
+            border-radius: 10px;
+        }
+        .container::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+        }
+
+        textarea::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: rgba(250, 245, 255, 0.5);
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #c4b5fd;
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #a78bfa;
+        }
+
+        .url-list-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .url-list-container::-webkit-scrollbar-track {
+            background: rgba(250, 245, 255, 0.5);
+            border-radius: 10px;
+        }
+        .url-list-container::-webkit-scrollbar-thumb {
+            background: #c4b5fd;
+            border-radius: 10px;
+        }
+        .url-list-container::-webkit-scrollbar-thumb:hover {
+            background: #a78bfa;
         }
     </style>
 </head>
 <body>
+    <header>
+        <h1>シマエナガに依頼する</h1>
+        <p>URLを追加して画像を一括取得</p>
+    </header>
+
     <div class="container">
-        <h1>画像一括取得システム</h1>
-        
         <form id="scrapeForm">
-            <div class="input-section">
-                <label for="urls">URL（1つまたは複数、1行1URL）:</label>
-                
-                <!-- ドラッグ&ドロップゾーン -->
-                <div class="drop-zone" id="dropZone">
-                    <div class="drop-zone-icon">📄</div>
-                    <div class="drop-zone-text">
-                        テキストファイルをドラッグ&ドロップ<br>
-                        またはクリックしてファイルを選択
-                    </div>
-                    <input type="file" id="fileInput" accept=".txt" style="display: none;">
+            <!-- URLを追加ゾーン（上部） -->
+            <div class="url-add-section">
+                <label for="singleUrl">URLを追加:</label>
+
+                <!-- 単独URL入力 -->
+                <div class="url-input-group">
+                    <input
+                        type="text"
+                        id="singleUrl"
+                        placeholder="https://example.com/page1"
+                    >
                 </div>
-                
-                <!-- テキストエリア -->
-                <textarea 
-                    id="urls" 
-                    placeholder="https://example.com/page1&#10;https://example.com/page2&#10;&#10;または、上記のドラッグ&ドロップゾーンにテキストファイルをドロップしてください"
-                    required
-                ></textarea>
-                
+                <button type="button" class="add-url-btn" id="addUrlBtn">追加</button>
+
+                <!-- ファイルアップロードボタン -->
+                <button type="button" class="file-upload-btn" id="fileUploadBtn">📄 ファイルから読み込む</button>
+            </div>
+
+            <!-- リクエストURLゾーン（下部） -->
+            <div class="url-list-section">
+                <label for="urls">リクエストURL:</label>
+
+                <!-- URLリスト表示エリア -->
+                <div class="url-list-container" id="urlListContainer">
+                    <div class="url-list-empty">上記から追加されたURLがここに表示されます</div>
+                </div>
+
                 <div class="url-count" id="urlCount">0 URL</div>
             </div>
-            
-            <button type="submit" id="submitBtn">取得開始</button>
+
+            <div class="button-group">
+                <button type="submit" id="submitBtn">取得開始</button>
+                <button type="button" class="reset-btn" id="resetBtn">リセット</button>
+            </div>
         </form>
         
         <div class="loading" id="loading">
-            <p>⏳ 処理中... しばらくお待ちください（数分かかる場合があります）</p>
+            <p>⏳ 処理中... しばらくお待ちください</p>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">0 / 0 URL処理中...</div>
+            </div>
+            <button type="button" class="cancel-btn" id="cancelBtn">キャンセル</button>
         </div>
         
         <div class="error" id="error"></div>
         <div class="success" id="success"></div>
     </div>
 
+    <!-- モーダルオーバーレイ（ドラッグ&ドロップゾーン） -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="drop-zone" id="dropZone">
+            <button type="button" class="close-modal" id="closeModal">×</button>
+            <div class="drop-zone-icon">📄</div>
+            <div class="drop-zone-text">
+                テキストファイルをドラッグ&ドロップ<br>
+                またはクリックしてファイルを選択
+            </div>
+            <input type="file" id="fileInput" accept=".txt" style="display: none;">
+        </div>
+    </div>
+
     <script>
         const form = document.getElementById('scrapeForm');
-        const urlsTextarea = document.getElementById('urls');
+        const urlListContainer = document.getElementById('urlListContainer');
+        const singleUrlInput = document.getElementById('singleUrl');
+        const addUrlBtn = document.getElementById('addUrlBtn');
+        const fileUploadBtn = document.getElementById('fileUploadBtn');
+        const modalOverlay = document.getElementById('modalOverlay');
         const dropZone = document.getElementById('dropZone');
+        const closeModal = document.getElementById('closeModal');
         const fileInput = document.getElementById('fileInput');
         const submitBtn = document.getElementById('submitBtn');
+        const resetBtn = document.getElementById('resetBtn');
         const loading = document.getElementById('loading');
         const errorDiv = document.getElementById('error');
         const successDiv = document.getElementById('success');
         const urlCount = document.getElementById('urlCount');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const cancelBtn = document.getElementById('cancelBtn');
+
+        // URLリストを管理する配列（各URLにステータスを持たせる）
+        let urlList = [];
+
+        // キャンセル用のAbortController
+        let abortController = null;
+
+        // URLリストを表示
+        function renderUrlList() {
+            console.log('renderUrlList called, urlList length:', urlList.length);
+            console.log('urlList content:', urlList);
+
+            // コンテナをクリア
+            urlListContainer.innerHTML = '';
+
+            if (urlList.length === 0) {
+                console.log('URL list is empty, showing placeholder');
+                urlListContainer.innerHTML = '<div class="url-list-empty">上記から追加されたURLがここに表示されます</div>';
+            } else {
+                console.log('Rendering', urlList.length, 'URLs');
+                urlList.forEach((item, index) => {
+                    const url = typeof item === 'string' ? item : item.url;
+                    const status = typeof item === 'string' ? null : item.status;
+
+                    const urlItem = document.createElement('div');
+                    urlItem.className = 'url-item';
+                    urlItem.dataset.url = url;
+
+                    const urlText = document.createElement('div');
+                    urlText.className = 'url-text';
+
+                    // ステータスマーカー（デバッグ用にconsole.log追加）
+                    const statusSpan = document.createElement('span');
+                    statusSpan.className = 'url-status';
+                    console.log('Rendering URL:', url, 'Status:', status);
+                    if (status === 'success') {
+                        statusSpan.textContent = '○';
+                        statusSpan.classList.add('success');
+                        console.log('Added success marker');
+                    } else if (status === 'failed') {
+                        statusSpan.textContent = '×';
+                        statusSpan.classList.add('failed');
+                        console.log('Added failed marker');
+                    } else {
+                        console.log('No status, skipping marker');
+                    }
+
+                    // URL文字列
+                    const urlSpan = document.createElement('span');
+                    urlSpan.textContent = url;
+
+                    urlText.appendChild(statusSpan);
+                    urlText.appendChild(urlSpan);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'url-delete-btn';
+                    deleteBtn.textContent = '×';
+                    deleteBtn.type = 'button';
+                    deleteBtn.title = '削除';
+                    deleteBtn.onclick = () => deleteUrl(index);
+
+                    urlItem.appendChild(urlText);
+                    urlItem.appendChild(deleteBtn);
+                    urlListContainer.appendChild(urlItem);
+                });
+            }
+
+            updateUrlCount();
+        }
+
+        // URLを削除
+        function deleteUrl(index) {
+            urlList.splice(index, 1);
+            renderUrlList();
+        }
 
         // URL数をカウントして表示
         function updateUrlCount() {
-            const urls = urlsTextarea.value
-                .split('\n')
-                .map(line => line.trim())
-                .filter(line => line && !line.startsWith('#'));
-            urlCount.textContent = `${urls.length} URL${urls.length !== 1 ? 's' : ''}`;
+            urlCount.textContent = `${urlList.length} URL${urlList.length !== 1 ? 's' : ''}`;
         }
 
-        urlsTextarea.addEventListener('input', updateUrlCount);
+        // URL形式を検証
+        function isValidUrl(string) {
+            try {
+                const url = new URL(string);
+                // プロトコルチェック
+                if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+                    return false;
+                }
+                // ドメインに . が含まれているか、localhostかチェック
+                return url.hostname.includes('.') || url.hostname === 'localhost';
+            } catch (_) {
+                // http:// または https:// がない場合は自動で追加を試みる
+                try {
+                    const url = new URL('https://' + string);
+                    // ドメインに . が含まれているか、localhostかチェック
+                    return url.hostname.includes('.') || url.hostname === 'localhost';
+                } catch (_) {
+                    return false;
+                }
+            }
+        }
+
+        // URLを正規化（http://がない場合は追加）
+        function normalizeUrl(string) {
+            try {
+                new URL(string);
+                return string;
+            } catch (_) {
+                return 'https://' + string;
+            }
+        }
+
+        // URLを追加する機能
+        addUrlBtn.addEventListener('click', () => {
+            const url = singleUrlInput.value.trim();
+            if (url) {
+                // URL形式チェック
+                if (!isValidUrl(url)) {
+                    showError('有効なURLを入力してください（例: https://example.com）');
+                    return;
+                }
+
+                // URLを正規化
+                const normalizedUrl = normalizeUrl(url);
+
+                // 重複チェック（オブジェクトまたは文字列の両方に対応）
+                const urlStrings = urlList.map(item => typeof item === 'string' ? item : item.url);
+                if (urlStrings.includes(normalizedUrl)) {
+                    showError('このURLは既に追加されています');
+                    return;
+                }
+                urlList.push({ url: normalizedUrl, status: null });
+                singleUrlInput.value = '';
+                renderUrlList();
+                // エラーメッセージをクリア
+                errorDiv.style.display = 'none';
+            }
+        });
+
+        // Enterキーでも追加できるように
+        singleUrlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addUrlBtn.click();
+            }
+        });
+
+        // ファイルアップロードボタンでモーダルを表示
+        fileUploadBtn.addEventListener('click', () => {
+            modalOverlay.classList.add('show');
+        });
+
+        // 閉じるボタンでモーダルを非表示
+        closeModal.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modalOverlay.classList.remove('show');
+        });
+
+        // オーバーレイクリックでモーダルを閉じる
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                modalOverlay.classList.remove('show');
+            }
+        });
 
         // ドラッグ&ドロップの処理
         dropZone.addEventListener('click', () => {
@@ -236,13 +879,37 @@
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropZone.classList.remove('dragover');
-            
+
             const file = e.dataTransfer.files[0];
             if (file && file.type === 'text/plain') {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    urlsTextarea.value = e.target.result;
-                    updateUrlCount();
+                    const urls = e.target.result
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line && !line.startsWith('#'))
+                        .map(url => normalizeUrl(url))
+                        .filter(url => isValidUrl(url));
+
+                    const invalidCount = e.target.result.split('\n').filter(line => line.trim() && !line.startsWith('#')).length - urls.length;
+
+                    // 重複を除外して追加
+                    const urlStrings = urlList.map(item => typeof item === 'string' ? item : item.url);
+                    const newUrls = urls.filter(url => !urlStrings.includes(url));
+                    const duplicateCount = urls.length - newUrls.length;
+                    urlList.push(...newUrls.map(url => ({ url, status: null })));
+                    renderUrlList();
+
+                    // 通知メッセージ
+                    const messages = [];
+                    if (invalidCount > 0) messages.push(`${invalidCount}件の無効なURL`);
+                    if (duplicateCount > 0) messages.push(`${duplicateCount}件の重複URL`);
+                    if (messages.length > 0) {
+                        showError(`${messages.join('と')}をスキップしました`);
+                    }
+
+                    // モーダルを閉じる
+                    modalOverlay.classList.remove('show');
                 };
                 reader.readAsText(file);
             } else {
@@ -255,47 +922,147 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    urlsTextarea.value = e.target.result;
-                    updateUrlCount();
+                    const urls = e.target.result
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line && !line.startsWith('#'))
+                        .map(url => normalizeUrl(url))
+                        .filter(url => isValidUrl(url));
+
+                    const invalidCount = e.target.result.split('\n').filter(line => line.trim() && !line.startsWith('#')).length - urls.length;
+
+                    // 重複を除外して追加
+                    const urlStrings = urlList.map(item => typeof item === 'string' ? item : item.url);
+                    const newUrls = urls.filter(url => !urlStrings.includes(url));
+                    const duplicateCount = urls.length - newUrls.length;
+                    urlList.push(...newUrls.map(url => ({ url, status: null })));
+                    renderUrlList();
+
+                    // 通知メッセージ
+                    const messages = [];
+                    if (invalidCount > 0) messages.push(`${invalidCount}件の無効なURL`);
+                    if (duplicateCount > 0) messages.push(`${duplicateCount}件の重複URL`);
+                    if (messages.length > 0) {
+                        showError(`${messages.join('と')}をスキップしました`);
+                    }
+
+                    // モーダルを閉じる
+                    modalOverlay.classList.remove('show');
                 };
                 reader.readAsText(file);
+            }
+        });
+
+        // 進捗シミュレーション
+        function simulateProgress(totalUrls, estimatedTimeMs) {
+            let currentProgress = 0;
+            const intervalMs = 500; // 0.5秒ごとに更新
+            const progressPerInterval = 100 / (estimatedTimeMs / intervalMs);
+
+            const interval = setInterval(() => {
+                currentProgress += progressPerInterval;
+                if (currentProgress >= 95) {
+                    currentProgress = 95; // 95%で止める（完了は実際のレスポンス待ち）
+                    clearInterval(interval);
+                }
+                const currentUrl = Math.min(Math.floor((currentProgress / 100) * totalUrls), totalUrls - 1);
+                updateProgress(currentUrl, totalUrls, currentProgress);
+            }, intervalMs);
+
+            return interval;
+        }
+
+        function updateProgress(current, total, percentage) {
+            progressFill.style.width = `${percentage}%`;
+            progressText.textContent = `${current} / ${total} URL処理中...`;
+        }
+
+        // キャンセルボタンのイベントリスナー
+        cancelBtn.addEventListener('click', () => {
+            if (abortController) {
+                abortController.abort();
+                showError('処理をキャンセルしました');
             }
         });
 
         // フォーム送信
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const urls = urlsTextarea.value
-                .split('\n')
-                .map(line => line.trim())
-                .filter(line => line && !line.startsWith('#'));
-            
-            if (urls.length === 0) {
+
+            if (urlList.length === 0) {
                 showError('URLを入力してください');
                 return;
             }
-            
+
+            // AbortControllerを作成
+            abortController = new AbortController();
+
             // UI更新
             submitBtn.disabled = true;
             loading.style.display = 'block';
             errorDiv.style.display = 'none';
             successDiv.style.display = 'none';
-            
+
+            // 進捗リセット
+            updateProgress(0, urlList.length, 0);
+
+            // 進捗シミュレーション開始（1URLあたり5秒と仮定）
+            const estimatedTime = urlList.length * 5000;
+            const progressInterval = simulateProgress(urlList.length, estimatedTime);
+
             try {
+                // URL文字列の配列を送信
+                const urlStrings = urlList.map(item => typeof item === 'string' ? item : item.url);
+
                 const response = await fetch('/api/scrape', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ urls: urls })
+                    body: JSON.stringify({ urls: urlStrings }),
+                    signal: abortController.signal
                 });
-                
+
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || 'エラーが発生しました');
                 }
-                
+
+                // レスポンスヘッダーから成功/失敗情報を取得
+                const successUrlsHeader = response.headers.get('X-Success-URLs');
+                const failedUrlsHeader = response.headers.get('X-Failed-URLs');
+
+                console.log('Success URLs Header:', successUrlsHeader);
+                console.log('Failed URLs Header:', failedUrlsHeader);
+
+                const successUrls = successUrlsHeader ? JSON.parse(successUrlsHeader) : [];
+                const failedUrls = failedUrlsHeader ? JSON.parse(failedUrlsHeader) : [];
+
+                console.log('Parsed Success URLs:', successUrls);
+                console.log('Parsed Failed URLs:', failedUrls);
+
+                // URLリストのステータスを更新
+                urlList = urlList.map(item => {
+                    const url = typeof item === 'string' ? item : item.url;
+                    if (successUrls.includes(url)) {
+                        console.log('Setting success for:', url);
+                        return { url, status: 'success' };
+                    } else if (failedUrls.includes(url)) {
+                        console.log('Setting failed for:', url);
+                        return { url, status: 'failed' };
+                    }
+                    return { url, status: null };
+                });
+
+                console.log('Updated URL List:', urlList);
+                console.log('About to call renderUrlList()...');
+                renderUrlList();
+                console.log('renderUrlList() finished');
+
+                // 進捗を停止して100%に
+                clearInterval(progressInterval);
+                updateProgress(urlList.length, urlList.length, 100);
+
                 // ZIPファイルをダウンロード
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
@@ -306,23 +1073,64 @@
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
-                
-                // 成功メッセージ
-                showSuccess('ダウンロードが完了しました！');
-                
+
+                // 成功メッセージ（成功/失敗の件数を表示）
+                const successCount = successUrls.length;
+                const failedCount = failedUrls.length;
+                let message = 'ダウンロードが完了しました！';
+                if (failedCount > 0) {
+                    message += ` (成功: ${successCount}件、失敗: ${failedCount}件)`;
+                }
+                showSuccess(message);
+
+                // リセットボタンを表示
+                resetBtn.style.display = 'block';
+
             } catch (error) {
-                showError('エラー: ' + error.message);
+                // 進捗を停止
+                clearInterval(progressInterval);
+
+                // キャンセルの場合は特別な処理
+                if (error.name === 'AbortError') {
+                    // キャンセルメッセージは既に表示されている
+                } else {
+                    showError('エラー: ' + error.message);
+                }
             } finally {
                 submitBtn.disabled = false;
                 loading.style.display = 'none';
+                abortController = null;
             }
         });
-        
+
+        // リセットボタンの処理
+        resetBtn.addEventListener('click', () => {
+            // URLリストをクリア
+            urlList = [];
+            renderUrlList();
+
+            // 単独URL入力をクリア
+            singleUrlInput.value = '';
+
+            // ファイル入力をリセット
+            fileInput.value = '';
+
+            // モーダルを非表示
+            modalOverlay.classList.remove('show');
+
+            // メッセージを非表示
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            // リセットボタンを非表示
+            resetBtn.style.display = 'none';
+        });
+
         function showError(message) {
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
         }
-        
+
         function showSuccess(message) {
             successDiv.textContent = message;
             successDiv.style.display = 'block';

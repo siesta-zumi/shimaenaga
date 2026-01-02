@@ -18,7 +18,7 @@ from playwright.sync_api import sync_playwright
 from 画像一括取得 import scrape_single_url_js
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, expose_headers=['X-Success-URLs', 'X-Failed-URLs'])
 
 # 一時ファイルのクリーンアップ用
 temp_files_to_cleanup = []
@@ -72,6 +72,10 @@ def scrape():
         result_root = os.path.join(temp_dir, 'result_js')
         os.makedirs(result_root, exist_ok=True)
         
+        # 成功/失敗を記録
+        success_urls = []
+        failed_urls = []
+
         try:
             # Playwrightで画像取得処理を実行
             with sync_playwright() as p:
@@ -79,11 +83,45 @@ def scrape():
                 for url in validated_urls:
                     try:
                         scrape_single_url_js(url, result_root, browser)
+                        success_urls.append(url)
                     except Exception as e:
                         print(f"Error processing {url}: {e}")
+                        failed_urls.append({'url': url, 'error': str(e)})
                         continue
                 browser.close()
-            
+
+            # 結果サマリーファイルを作成
+            summary_path = os.path.join(result_root, '_result_summary.txt')
+            with open(summary_path, 'w', encoding='utf-8') as f:
+                f.write("=" * 60 + "\n")
+                f.write("画像一括取得システム - 処理結果\n")
+                f.write("=" * 60 + "\n\n")
+
+                f.write(f"総URL数: {len(validated_urls)}\n")
+                f.write(f"成功: {len(success_urls)}件\n")
+                f.write(f"失敗: {len(failed_urls)}件\n\n")
+
+                if success_urls:
+                    f.write("-" * 60 + "\n")
+                    f.write("✅ 成功したURL:\n")
+                    f.write("-" * 60 + "\n")
+                    for url in success_urls:
+                        f.write(f"  • {url}\n")
+                    f.write("\n")
+
+                if failed_urls:
+                    f.write("-" * 60 + "\n")
+                    f.write("❌ 失敗したURL:\n")
+                    f.write("-" * 60 + "\n")
+                    for item in failed_urls:
+                        f.write(f"  • {item['url']}\n")
+                        f.write(f"    エラー: {item['error']}\n\n")
+                    f.write("-" * 60 + "\n")
+                    f.write("💡 ヒント:\n")
+                    f.write("失敗したURLは新しいextractorパターンが必要かもしれません。\n")
+                    f.write("Claude Codeで '/analyze-failed-url' Skillを使用して\n")
+                    f.write("URL構造を分析できます。\n")
+
             # 結果をZIP化
             zip_path = os.path.join(temp_dir, 'result.zip')
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -96,14 +134,20 @@ def scrape():
             
             # クリーンアップリストに追加（5分後に削除）
             temp_files_to_cleanup.append((temp_dir, time.time()))
-            
-            # ZIPファイルを返す
-            return send_file(
+
+            # ZIPファイルを返す（成功/失敗情報をヘッダーに含める）
+            import json
+            response = send_file(
                 zip_path,
                 mimetype='application/zip',
                 as_attachment=True,
                 download_name='result.zip'
             )
+            # 成功したURLリストをヘッダーに追加
+            response.headers['X-Success-URLs'] = json.dumps(success_urls)
+            # 失敗したURLリストをヘッダーに追加（URLのみ）
+            response.headers['X-Failed-URLs'] = json.dumps([item['url'] for item in failed_urls])
+            return response
             
         except Exception as e:
             # エラー時は即座に削除
@@ -119,6 +163,11 @@ def scrape():
 @app.route('/')
 def index():
     """HTMLページを返す"""
+    import os
+    file_path = os.path.abspath('index.html')
+    file_size = os.path.getsize(file_path)
+    print(f"[INFO] Serving index.html from: {file_path}")
+    print(f"[INFO] File size: {file_size} bytes")
     return send_from_directory('.', 'index.html')
 
 if __name__ == '__main__':
